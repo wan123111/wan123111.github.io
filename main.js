@@ -20,21 +20,30 @@ function randomColor() {
     );
 }
 
-function Ball(x, y, velX, velY, color, size) {
+// 通用 Shape 类
+function Shape(x, y, color, size) {
     this.x = x;
     this.y = y;
-    this.velX = velX;
-    this.velY = velY;
     this.color = color;
     this.size = size;
 }
 
-Ball.prototype.draw = function () {
+Shape.prototype.draw = function () {
     ctx.beginPath();
     ctx.fillStyle = this.color;
     ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
     ctx.fill();
 };
+
+// Ball 类
+function Ball(x, y, velX, velY, color, size) {
+    Shape.call(this, x, y, color, size);
+    this.velX = velX;
+    this.velY = velY;
+}
+
+Ball.prototype = Object.create(Shape.prototype);
+Ball.prototype.constructor = Ball;
 
 Ball.prototype.update = function () {
     if (this.x + this.size >= width || this.x - this.size <= 0) {
@@ -64,8 +73,34 @@ Ball.prototype.collisionDetect = function () {
     }
 };
 
-let balls = [];
+// DemonCircle 类（环状）
+function DemonCircle(x, y, size) {
+    Shape.call(this, x, y, "red", size);
+    this.originalSize = size; // 记录初始大小
+}
 
+DemonCircle.prototype = Object.create(Shape.prototype);
+DemonCircle.prototype.constructor = DemonCircle;
+
+DemonCircle.prototype.draw = function () {
+    ctx.beginPath();
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 5; // 环的宽度
+    ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
+    ctx.stroke(); // 只绘制边框
+};
+
+DemonCircle.prototype.update = function (targetX, targetY) {
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
+    const angle = Math.atan2(dy, dx);
+    const speed = 0.1; // 控制恶魔圈的移动速度
+    this.x += Math.cos(angle) * speed * Math.sqrt(dx * dx + dy * dy);
+    this.y += Math.sin(angle) * speed * Math.sqrt(dx * dx + dy * dy);
+};
+
+// 创建弹球
+let balls = [];
 function createBall() {
     let size = random(10, 20);
     return new Ball(
@@ -83,33 +118,11 @@ while (balls.length < 25) {
     balls.push(createBall());
 }
 
-// 恶魔圈类
-function DemonCircle(x, y, size) {
-    this.x = x;
-    this.y = y;
-    this.size = size;
-    this.originalSize = size; // 记录初始大小
-}
-
-DemonCircle.prototype.draw = function () {
-    ctx.beginPath();
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 5;
-    ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
-    ctx.stroke();
-};
-
-DemonCircle.prototype.update = function (targetX, targetY) {
-    const dx = targetX - this.x;
-    const dy = targetY - this.y;
-    const angle = Math.atan2(dy, dx);
-    const speed = 0.1; // 控制恶魔圈的移动速度，值越小，跟随越平滑
-    this.x += Math.cos(angle) * speed * Math.sqrt(dx * dx + dy * dy);
-    this.y += Math.sin(angle) * speed * Math.sqrt(dx * dx + dy * dy);
-};
-
 // 创建恶魔圈
 const demonCircle = new DemonCircle(width / 2, height / 2, 30);
+
+// 计分器
+let score = balls.length;
 
 function loop() {
     ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
@@ -135,6 +148,7 @@ function loop() {
             // 弹球被吃掉
             balls.splice(i, 1);
             demonCircle.size += 2; // 恶魔圈变大
+            score--; // 更新分数
             i--;
 
             // 刷新弹球
@@ -142,10 +156,16 @@ function loop() {
                 for (let j = 0; j < 25; j++) {
                     balls.push(createBall());
                 }
+                score = balls.length; // 恢复分数
                 demonCircle.size = demonCircle.originalSize; // 恶魔圈恢复到原始大小
             }
         }
     }
+
+    // 绘制分数
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.fillText("剩余弹球数: " + score, 20, 30);
 
     requestAnimationFrame(loop);
 }
