@@ -103,9 +103,9 @@ DemonCircle.prototype.update = function (targetX, targetY) {
     const dx = targetX - this.x;
     const dy = targetY - this.y;
     const angle = Math.atan2(dy, dx);
-    const speed = 3; // 控制恶魔圈的移动速度
-    this.x += Math.cos(angle) * speed;
-    this.y += Math.sin(angle) * speed;
+    const speed = 0.1; // 控制恶魔圈的移动速度，值越小，跟随越平滑
+    this.x += Math.cos(angle) * speed * Math.sqrt(dx * dx + dy * dy);
+    this.y += Math.sin(angle) * speed * Math.sqrt(dx * dx + dy * dy);
 };
 
 // 创建恶魔圈
